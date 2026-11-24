@@ -1,0 +1,41 @@
+# RapiMock documentation
+
+> How to run RapiMock, the mock server that turns an OpenAPI spec into an API with request validation, token checks and state, and how to use it in tests.
+
+RapiMock serves every operation of your OpenAPI spec over HTTP. It validates requests, checks tokens, and with `--stateful` keeps what you create, so a frontend, a test suite or another service can call your API before it exists. What it does and how it compares with the in-browser mock of `<rapi-doc>` is on [RapiMock's page](https://rapidocui.com/rapi-mock/).
+
+```bash
+npm install -D @rapidoc/cli @rapidoc/mock
+npx rapidoc mock openapi.yaml --stateful
+```
+
+## Find your way
+
+**[Get started](/docs/getting-started/introduction/)**
+
+What RapiMock is and is not, a quickstart, and how it reads a data model off a spec.
+
+**[Responses](/docs/responses/what-it-answers/)**
+
+What it answers, picking a status code or example, and checking tokens and scopes.
+
+**[Keeping state](/docs/state/overview/)**
+
+Resources worked out from the spec, seed data, a session per test, and the API styles it handles.
+
+**[Correcting the mock](/docs/correcting/config-file/)**
+
+State the data model in `mock.config.yaml` where the spec doesn't show it, and lint the spec for the mock.
+
+**[Mock UI](/docs/mock-ui/tour/)**
+
+See the records and what the mock does for every operation, and reset or reseed the data.
+
+**[Testing](/docs/testing/any-language/)**
+
+Tests in any language over HTTP, in JavaScript without a port, and with RapiDoc, RapiFlow and MCP.
+
+The [reference](/docs/reference/cli/) lists every CLI option, the control API, every key of `mock.config.yaml` and every lint rule. To see what RapiMock makes of a spec without installing anything, use the [spec check](/spec-check/index.html).
+
+> **Note: What it handles**
+> RapiMock reads the data model off the spec. It does that well for APIs with ids in the path and keys at the top of a record, and needs a few lines of config for other styles. [See which, with examples](/docs/state/api-styles/).

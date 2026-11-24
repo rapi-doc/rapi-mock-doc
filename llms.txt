@@ -1,0 +1,30 @@
+# RapiMock
+
+> A mock server that turns an OpenAPI spec into an API that remembers. Request validation, token checks, state, a UI to look inside, and tests in any language. Part of the RapiDoc family of open-source (MIT) tools for OpenAPI and Arazzo, each with its own llms.txt: RapiDoc, the <rapi-doc> web component for interactive API references with Try, an in-browser mock and MCP server export (https://rapidocui.com/llms.txt); RapiDoc Portal, a docs-as-code developer portal built from OpenAPI specs and Markdown guides, with single sign-on and access rules (https://portal.rapidocui.com/llms.txt); RapiMock, a stateful mock server with request validation and token checks (https://mock.rapidocui.com/llms.txt); RapiFlow, the <rapi-flow> web component that draws Arazzo workflows and runs them in the browser (https://flow.rapidocui.com/llms.txt); plus RapiDoc Mini, RapiPdf (OpenAPI to PDF), the RapiDoc CLI (lint, validate, bundle, mock, MCP) and RapiDoc for Express, Fastify, Hono, FastAPI, Starlight, VitePress, Docusaurus and ASP.NET Core. How RapiDoc, RapiDoc Portal and RapiMock compare with Redocly, Scalar, Swagger, Mintlify, ReadMe, Zudoku, Docusaurus, Prism, WireMock, Mockoon, Postman and Microcks, feature by feature: https://rapidocui.com/docs/compare.md
+
+## RapiMock
+
+- [RapiMock documentation](https://mock.rapidocui.com/index.md): How to run RapiMock, the mock server that turns an OpenAPI spec into an API with request validation, token checks and state, and how to use it in tests.
+
+## Documentation
+
+- [Introduction](https://mock.rapidocui.com/docs/getting-started/introduction.md): What RapiMock is, what it is for, and how it differs from the in-browser mock.
+- [Quickstart](https://mock.rapidocui.com/docs/getting-started/quickstart.md): Install RapiMock, start it on a spec, create a record and read it back.
+- [How it works](https://mock.rapidocui.com/docs/getting-started/how-it-works.md): How RapiMock reads resources, keys and links off an OpenAPI spec, and what the three labels mean.
+- [CLI options](https://mock.rapidocui.com/docs/reference/cli.md): Every option of rapidoc mock.
+- [Control API](https://mock.rapidocui.com/docs/reference/control-api.md): The /__mock endpoints - health, the model, lint, settings, reset, state, snapshot and restore.
+- [mock.config.yaml reference](https://mock.rapidocui.com/docs/reference/config-file.md): Every key of mock.config.yaml.
+- [Lint rules](https://mock.rapidocui.com/docs/reference/lint-rules.md): The rapidoc lint rules about mocking - examples, and what the stateful mock assumes.
+- [What it answers](https://mock.rapidocui.com/docs/responses/what-it-answers.md): Where RapiMock's responses come from, and how requests are validated.
+- [Picking a response](https://mock.rapidocui.com/docs/responses/picking-a-response.md): Choose which documented response the mock returns, with the Prefer header.
+- [Tokens and scopes](https://mock.rapidocui.com/docs/responses/tokens-and-scopes.md): How RapiMock enforces each operation's security, with real token checks against your issuer.
+- [Keeping state](https://mock.rapidocui.com/docs/state/overview.md): With --stateful, RapiMock remembers what you create, change and delete.
+- [Seed data](https://mock.rapidocui.com/docs/state/seed-data.md): The records every resource starts with, and where each value comes from.
+- [Sessions](https://mock.rapidocui.com/docs/state/sessions.md): Give each test its own copy of the data with the X-Mock-Session header.
+- [API styles](https://mock.rapidocui.com/docs/state/api-styles.md): Which kinds of API RapiMock keeps state for with no configuration, and which need a few lines.
+- [mock.config.yaml](https://mock.rapidocui.com/docs/correcting/config-file.md): State what RapiMock could not read off your spec - a resource's key, what an operation does.
+- [Lint your spec for the mock](https://mock.rapidocui.com/docs/correcting/lint.md): rapidoc lint --stateful reports what the mock had to assume about your spec, before you run it.
+- [A tour of the Mock UI](https://mock.rapidocui.com/docs/mock-ui/tour.md): See the records RapiMock holds, what it does for every operation, and how sure it is.
+- [Tests in any language](https://mock.rapidocui.com/docs/testing/any-language.md): Prepare and check RapiMock's data over HTTP, from pytest, JUnit, Go or anything else.
+- [In JavaScript, without a port](https://mock.rapidocui.com/docs/testing/javascript.md): Use @rapidoc/mock as a library - in-process in your tests, or inside your own server.
+- [With RapiDoc, RapiFlow and MCP](https://mock.rapidocui.com/docs/testing/with-rapidoc.md): Point Try in <rapi-doc>, Arazzo workflows and an MCP server at RapiMock.

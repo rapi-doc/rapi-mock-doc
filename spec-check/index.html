@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Check a spec | RapiMock</title>
+    <meta
+      name="description"
+      content="See what RapiMock makes of your OpenAPI spec: its resources, seed data and lint findings. It runs in your browser; the spec is not sent anywhere."
+    />
+    <link rel="icon" href="../rapidoc-leaves.svg" />
+    <!-- Google Analytics: the same property as rapidocui.com; content_group tells the sites apart. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-M9TPKERDJ6"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag("js", new Date());
+      gtag("config", "G-M9TPKERDJ6", { content_group: "Mock" });
+    </script>
+    <style>
+      /*
+       * The colors, type and spacing are the Mock UI's own: the build writes its tokens here, from
+       * packages/rapidoc-mock/ui/styles/tokens.js (the "spec-check-files" plugin of vite.config.mjs), so the
+       * page and the Mock UI inside it never drift apart. --strip is this page's one shade of its own.
+       */
+      :root {
+        /*
+     * The surfaces: one base, the page, and every other shade mixed from it, so they move together and keep
+     * their steps. Darker is further back (the sidebar, a well of raw content such as code), lighter is raised
+     * (a card, a row under the pointer). Change --surface, not the shades.
+     */
+    --surface: #2a2c34;
+    --bg: var(--surface);
+    --sidebar: color-mix(in oklab, var(--surface), black 15%);
+    /* a link of the sidebar under the pointer is lighter, the page you are on darker, with the amber bar */
+    --sidebar-hover: color-mix(in oklab, var(--surface), white 3%);
+    --sidebar-current: color-mix(in oklab, var(--surface), black 23%);
+    --inset: color-mix(in oklab, var(--surface), black 10%);
+    /* a panel on the page; opaque, so a sticky cell can use it */
+    --card: color-mix(in oklab, var(--surface), white 6%);
+    --hover: color-mix(in oklab, var(--surface), white 12%);
+    /* a table's heading row: a step under the card it is on, so it reads as a band over the rows */
+    --table-head: color-mix(in oklab, var(--surface), white 1%);
+    --line: color-mix(in oklab, var(--surface), white 13%);
+    --border: color-mix(in oklab, var(--surface), white 16%);
+    /* the edge of a pinned column: brighter than any line, so it reads as an edge, not a row's border */
+    --key-edge: color-mix(in oklab, var(--surface), white 35%);
+    --fg: #c0c4c8;
+    --strong: #ffffff;
+    --muted: #949ba2;
+    --primary: #f6a821;
+    --primary-fg: #24262d;
+    --accent-text: #f6a821;
+    /* the three labels: green, a light red (amber is the accent, so it can't mark a warning), grey. --warn
+       (Needs review) is 4.8:1 on a card */
+    --ok: #68cc97;
+    --ok-bg: #24463a;
+    --warn: #ff8080;
+    --plain: #b4b9c4;
+    --error: #f98080;
+    /* a warning: orange, apart from the amber of the accent (the place you are, the main action) */
+    --warning: #ff8a4c;
+    /*
+     * Series colors for a chart that splits a whole: the first three of the dataviz categorical palette's dark
+     * steps, which tell apart in any pair, also with colorblind eyes, on --card. More parts than three fold into
+     * an "Other" in --series-other. A chart's key names every part, so color is never the only label.
+     */
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-other: #6b7079;
+    /* an HTTP method as colored text: RapiDoc's hues, lightened to 4.5:1 or more on a card */
+    --method-get: #8ab4ff;
+    --method-post: #7dd8a8;
+    --method-put: #f7b03c;
+    --method-patch: #c4b5fd;
+    --method-delete: #ff9696;
+    --method-head: #eab308;
+    --method-options: #22d3ee;
+    --method-query: #a5b4fc;
+    /* a control's border (stronger than a panel's), the main action under the pointer, a field's placeholder */
+    --border-strong: #616779;
+    --primary-hover: #ffb93a;
+    --placeholder: #7b828b;
+    /* type: the monospace stack, and the small size of hints, code and counts */
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --small: 12.5px;
+    /* spacing: one scale for the room inside and between things; hairlines (1, 2, 3, 6px) are written as is */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    /* shadows: of a drawer and of a menu over the page, and at an edge content scrolls under */
+    --shadow-drawer: -10px 0 24px rgb(0 0 0 / 45%);
+    --shadow-menu: 0 8px 24px rgb(0 0 0 / 45%);
+    --shade: rgb(0 0 0 / 40%);
+        --strip: var(--sidebar-current);
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          14px/1.5 Roboto,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      a {
+        color: var(--primary);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      h1,
+      h2 {
+        margin: 0;
+        color: var(--strong);
+        font-weight: 500;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12.5px;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        padding: 6px 14px;
+        border: 1px solid var(--border-strong);
+        border-radius: 3px;
+        background: transparent;
+        white-space: nowrap;
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--muted);
+        color: var(--strong);
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+      button.primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-fg);
+        font-weight: 500;
+      }
+      :focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+      }
+
+      /* The start: paste, drop or choose a spec */
+      #start {
+        flex: 1;
+        overflow-y: auto;
+        padding: 48px 16px;
+      }
+      .intro {
+        max-width: 760px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .intro h1 {
+        font-size: 30px;
+      }
+      .intro .lead {
+        font-size: 16px;
+        margin: 0;
+      }
+      .private {
+        margin: 0;
+        padding: 10px 14px;
+        border-left: 3px solid var(--ok);
+        background: var(--card);
+        border-radius: 0 3px 3px 0;
+      }
+      textarea {
+        width: 100%;
+        min-height: 260px;
+        padding: 12px;
+        border: 1px dashed var(--border);
+        border-radius: 3px;
+        background: var(--inset);
+        color: var(--fg);
+        font:
+          12.5px/1.5 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
+        resize: vertical;
+      }
+      textarea:focus {
+        border-color: var(--primary);
+        outline: none;
+      }
+      textarea.over {
+        border-color: var(--primary);
+        background: var(--card);
+      }
+      /* An address to load the spec from, over the box to paste it in */
+      .from-url {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .from-url label {
+        color: var(--strong);
+        font-weight: 500;
+      }
+      .url-row {
+        display: flex;
+        gap: 10px;
+      }
+      .url-row input {
+        flex: 1;
+        min-width: 0;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        background: var(--inset);
+        color: var(--fg);
+        font:
+          12.5px/1.5 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
+      }
+      .url-row input:focus {
+        border-color: var(--primary);
+        outline: none;
+      }
+      .url-row input::placeholder,
+      textarea::placeholder {
+        color: var(--placeholder);
+      }
+      .or {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .or::before,
+      .or::after {
+        content: "";
+        flex: 1;
+        border-top: 1px solid var(--line);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+      .grow {
+        flex: 1;
+      }
+      .problem {
+        margin: 0;
+        padding: 10px 14px;
+        border: 1px solid var(--warn);
+        border-radius: 3px;
+        color: var(--warn);
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .intro ul {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--muted);
+      }
+
+      /* The result: a strip over the Mock UI, which also shows the lint findings */
+      #result {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      /* one row: the note gives up its room first (it ends in "…"), the link, the spec's name and the button never;
+         on a phone the row wraps */
+      .strip {
+        flex: none;
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 6px 14px;
+        padding: 7px 16px;
+        background: var(--strip);
+        border-bottom: 1px solid var(--line);
+        font-size: 13px;
+      }
+      .strip strong {
+        color: var(--strong);
+        font-weight: 500;
+      }
+      .strip > * {
+        flex: none;
+        white-space: nowrap;
+      }
+      .strip > .note {
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .strip button {
+        margin-left: auto;
+        padding: 3px 10px;
+      }
+      @media (max-width: 760px) {
+        .strip {
+          flex-wrap: wrap;
+        }
+        .strip > .note {
+          display: none;
+        }
+      }
+      #ui {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      #ui > rapidoc-mock-ui {
+        flex: 1;
+        min-height: 0;
+      }
+    </style>
+    <script type="module" src="mock-ui.js"></script>
+    <script type="module" src="spec-check.js"></script>
+  </head>
+  <body>
+    <main id="start">
+      <div class="intro">
+        <p><a href="https://rapidocui.com/rapi-mock/">← RapiMock</a></p>
+        <h1>Check a spec</h1>
+        <p class="lead">
+          See what RapiMock makes of your OpenAPI spec: the resources it finds, the data it would
+          start with, which operations keep state, and what the spec could say more clearly.
+        </p>
+        <p class="private">
+          This runs in your browser. Your spec is not sent to us or to anyone else; it is kept in
+          this browser so a reload finds it again, until you choose another. A spec you load from an
+          address is fetched by your browser from that address, and from nowhere else.
+        </p>
+        <form id="from-url" class="from-url">
+          <label for="url">Load from an address</label>
+          <div class="url-row">
+            <input
+              id="url"
+              type="url"
+              inputmode="url"
+              spellcheck="false"
+              autocomplete="url"
+              placeholder="https://example.com/openapi.yaml"
+            />
+            <button id="load" type="submit">Load</button>
+          </div>
+        </form>
+        <p class="or"><span>or paste a spec</span></p>
+        <textarea
+          id="text"
+          spellcheck="false"
+          aria-label="Your OpenAPI spec, as YAML or JSON"
+          placeholder="Paste an OpenAPI 3.0, 3.1 or 3.2 spec here (YAML or JSON), or drop a file or a link on this box."
+        ></textarea>
+        <div class="actions">
+          <button id="check" class="primary">Check this spec</button>
+          <button id="choose">Choose a file</button>
+          <input id="file" type="file" accept=".yaml,.yml,.json,application/json,text/yaml" hidden />
+          <span class="grow"></span>
+          <button id="example">Try the example</button>
+        </div>
+        <p id="problem" class="problem" role="alert" hidden></p>
+        <ul>
+          <li>One file: a <code>$ref</code> to another file is not followed here.</li>
+          <li>
+            An address works when its server lets other sites read it (CORS), as
+            <code>raw.githubusercontent.com</code> does. Link straight to a check with
+            <code>?url=</code> and the address: <code>spec-check/index.html?url=https://…/openapi.yaml</code>.
+          </li>
+          <li>
+            This shows what the mock would hold. To call the mocked API, run it yourself:
+            <code>npx rapidoc mock your-spec.yaml --stateful</code>.
+          </li>
+        </ul>
+      </div>
+    </main>
+
+    <div id="result" hidden>
+      <div class="strip">
+        <a href="https://rapidocui.com/rapi-mock/">← RapiMock</a>
+        <span>Spec check: <strong id="name"></strong> <span id="version" class="muted"></span></span>
+        <span class="muted note" title="Runs in your browser. Nothing is sent anywhere.">
+          Runs in your browser. Nothing is sent anywhere.
+        </span>
+        <button id="another">Check another spec</button>
+      </div>
+      <div id="ui"></div>
+    </div>
+  </body>
+</html>

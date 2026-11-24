@@ -1,0 +1,47 @@
+# Control API
+
+> The /__mock endpoints - health, the model, lint, settings, reset, state, snapshot and restore.
+
+The mock's own endpoints are at `/__mock`, beside the APIs. With an `X-Mock-Session` header, each works on that [session](/docs/state/sessions/)'s data only.
+
+| Endpoint | What it does |
+| :--- | :--- |
+| `GET /__mock/health` | Ready check: `200` with the APIs served. Works without `--stateful` too. |
+| `GET /__mock/model` | What the mock made of each spec: resources, and every operation with its label. `/<api id>` for one API. Each resource has `records`, how many the caller's session holds now, and `seeded`, how many a reset goes back to. |
+| `GET /__mock/model/<api id>/resources/<Resource>` | One resource: fields, how each is seeded, links, operations. A resource whose schema is one of several objects (a `oneOf` or `anyOf` with no fields of its own) has `shape`: `{ kind, options, by }`, the schema names of its shapes and the property that tells them apart; its `fields` are all of theirs, and a field only some have lists them in `onlyIn`. A schema with no fields at all has `shape: { kind: "none" }`. A field that holds an object, or a list of objects, has its own `fields`, three levels deep at most; under a field that copies another resource's records they have no `seededAs`. Add `/sample` for a generated record that is not stored (`?seed=` to repeat it). |
+| `GET /__mock/model/<api id>/operations/<id>` | One operation: what the mock does, its parameters, request, responses and a sample response. Each response says where its body comes from (`body`: `example`, `examples` with their names, or `generated`) and, with `returned: true`, which one a request gets unless `Prefer: code=` asks for another. `?code=404` makes the sample that response's. A query parameter the mock had to assume something about has `review` (what it assumed: "matches no field of `` `Article` ``"), and the operation then has `review: { parameters, other }`: how many parameters, and the rest of its review note. `<id>` is the `id` the model lists, URL-encoded. |
+| `GET /__mock/lint/<api id>` | What [lint](/docs/correcting/lint/) finds in the API's spec, as `rapidoc lint --stateful` reports it: every finding with its rule and line, and the share of checks that passed per category. The first call lints the spec, which takes a few seconds on a large one; the answer is kept. |
+| `GET /__mock/settings` | How the mock was started: state, seed, rows, delay, tokens, the APIs. |
+| `PATCH /__mock/settings` | Changes the response delay while the mock runs: `{ "delay": 250 }`. |
+| `POST /__mock/apis` | Adds a spec while the mock runs: `{ "url": "https://example.com/openapi.yaml" }`, or `{ "text": "<YAML or JSON>", "name": "orders-api.yaml" }`. It is served at once under an id made from its file name (pasted text without a name: its title), made unique, with state, until the mock stops. Answers `201` with `{ id, title, operations, stateful }`, or `400` saying why the spec can't be served. Accepted only from the machine the mock runs on (`403` otherwise), because it makes the mock read the address you give: a program there, or the mock's own page. A request from another site's page in your browser, one that came through a proxy, or one sent to a name other than `localhost` is refused. A `$ref` in the text to another file of the machine is refused too (`400`). `GET /__mock/settings` lists such an API with `imported: true`. |
+| `DELETE /__mock/apis/<api id>` | Removes an API added with `POST /__mock/apis`. The APIs the mock started with can't be removed. |
+| `POST /__mock/reset` | Puts the data back to what the mock started with. `?api=<id>` resets one API. With a body `{ "rows": 25, "seed": 7 }` it makes new seed data of that size, and drops every session's records. |
+| `GET /__mock/state` | The stored records. Narrow it with `/<api id>`, `/<api id>/<Resource>` or `/<api id>/<Resource>/<key>`. |
+| `POST /__mock/snapshot` | Returns all stored records as one JSON document. `?api=<id>` for one API. |
+| `POST /__mock/restore` | Replaces the records with the document you send: a snapshot, or data your test wrote. |
+| `GET /__mock/ui` | The [Mock UI](/docs/mock-ui/tour/). |
+
+The sentences the model writes (`does`, `why`, `review`, a parameter's `role`) put the names they take from the spec, a resource, a parameter or a field, in backticks: "Lists the stored `` `Owner` `` records, filtered by `` `lastName` ``." The Mock UI shows them as code; `rapidoc lint --stateful` prints the same notes without the marks.
+
+## The state document
+
+`snapshot` returns it and `restore` takes it:
+
+```json
+{ "<api id>": { "<Resource>": [ { "id": 1, "name": "Biscuit" } ] } }
+```
+
+- A restore replaces every resource of the APIs it names; a resource it leaves out becomes empty. Other APIs are left alone.
+- A document that is wrong changes nothing.
+- A record that lives under a parent without having a field for it carries the parent in `$parents`. Keep that entry when you restore.
+
+## Errors
+
+Problems come back as `application/problem+json`, with a `detail` that says what to do. Without `--stateful`, `health`, `settings`, `apis` and `ui` still work; the endpoints that read or change the state (`model`, `lint`, `reset`, `state`, `snapshot`, `restore`) return `409`. A path with a percent-escape that can't be decoded (`/__mock/state/%E0%A4%A`) gets `400`.
+
+## Not for a public server
+
+These endpoints are open to any caller: anyone who can reach the mock can reset or replace its data. The mock is a development tool. Don't expose it publicly.
+
+> **Note:**
+> An OpenAPI description of this API, shown here as an interactive reference, is planned.
